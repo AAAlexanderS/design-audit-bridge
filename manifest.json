@@ -1,0 +1,14 @@
+{
+  "name": "Design Audit Bridge",
+  "id": "claude-control-bridge",
+  "api": "1.0.0",
+  "main": "dist/code.js",
+  "ui": "dist/ui.html",
+  "capabilities": [],
+  "enableProposedApi": false,
+  "editorType": ["figma"],
+  "networkAccess": {
+    "allowedDomains": ["ws://localhost:7879"],
+    "reasoning": "Connects via WebSocket to a local bridge server (localhost:7879) running on the user's own machine. This enables Claude AI to propose design changes that the user reviews and approves inside Figma before any edit is applied. No design data is sent to external servers."
+  }
+}

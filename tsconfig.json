@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "es6",
+    "module": "none",
+    "lib": ["es2020", "dom"],
+    "strict": true,
+    "noImplicitAny": true,
+    "outDir": "dist",
+    "typeRoots": ["./node_modules/@types", "./node_modules/@figma"],
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "removeComments": false,
+    "isolatedModules": false
+  },
+  "include": ["src/code.ts"]
+}

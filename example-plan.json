@@ -1,0 +1,29 @@
+{
+  "planId": "example_rename_page",
+  "title": "Rename current page",
+  "summary": "Simple smoke test: renames a page to verify the plan → approve → execute → undo loop works.",
+  "domain": "figma",
+  "passNumber": 1,
+  "passTotal": 1,
+  "operations": [
+    {
+      "id": "op_1",
+      "verb": "rename",
+      "target": {
+        "kind": "page",
+        "id": "REPLACE_WITH_A_REAL_PAGE_ID",
+        "type": "PAGE"
+      },
+      "context": {
+        "page": "Current page",
+        "breadcrumb": "Document › Current page"
+      },
+      "from": "Old page name",
+      "to": "🧪 Renamed by Control Bridge",
+      "reason": "Smoke test of the control flow",
+      "risk": "safe",
+      "reversible": true,
+      "cascades": []
+    }
+  ]
+}

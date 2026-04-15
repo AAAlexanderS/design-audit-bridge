@@ -1,0 +1,19 @@
+{
+  "name": "design-audit-bridge",
+  "version": "1.0.0",
+  "description": "Figma plugin that lets Claude propose design changes which you review and approve inside Figma before any edit is applied.",
+  "license": "MIT",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "build": "tsc && cp src/ui.html dist/ui.html",
+    "watch": "tsc -w",
+    "server": "node bridge-server.js"
+  },
+  "devDependencies": {
+    "@figma/plugin-typings": "^1.100.2",
+    "typescript": "^5.4.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0"
+  }
+}

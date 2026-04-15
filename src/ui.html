@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src ws://localhost:7879;" />
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-subtle: #f6f5f0;
+    --bg-plan: #eeedfe;
+    --bg-plan-text: #26215c;
+    --bg-plan-text-muted: #3c3489;
+    --text: #1a1a1a;
+    --text-muted: #5f5e5a;
+    --text-tertiary: #888780;
+    --border: rgba(0, 0, 0, 0.12);
+    --border-strong: rgba(0, 0, 0, 0.24);
+    --accent: #26215c;
+    --accent-text: #ffffff;
+    --danger: #a32d2d;
+    --success: #0f6e56;
+    --warning-bg: #faeeda;
+    --warning-text: #633806;
+    --row-hover: #f1efe8;
+    --row-selected: #f1efe8;
+    --radius: 8px;
+    --radius-sm: 4px;
+    /* Aliases for convenience */
+    --bg-hover: #f1efe8;
+    --bg-secondary: #eeedfe;
+    --text-primary: #1a1a1a;
+    --text-secondary: #5f5e5a;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #2c2c2a;
+      --bg-subtle: #3a3a38;
+      --bg-plan: #3c3489;
+      --bg-plan-text: #eeedfe;
+      --bg-plan-text-muted: #cecbf6;
+      --text: #f1efe8;
+      --text-muted: #b4b2a9;
+      --text-tertiary: #888780;
+      --border: rgba(255, 255, 255, 0.12);
+      --border-strong: rgba(255, 255, 255, 0.24);
+      --row-hover: #444441;
+      --row-selected: #444441;
+      --bg-hover: #444441;
+      --bg-secondary: #3c3489;
+      --text-primary: #f1efe8;
+      --text-secondary: #b4b2a9;
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 13px;
+    color: var(--text);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 0.5px solid var(--border);
+    flex-shrink: 0;
+  }
+  .header-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+  }
+  .status-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    background: var(--bg-hover);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+    transition: all 0.3s;
+  }
+  .status-badge.connected {
+    background: rgba(23, 196, 126, 0.1);
+    color: var(--success);
+  }
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--danger);
+    transition: background 0.3s;
+  }
+  .status-badge.connected .status-dot { background: var(--success); }
+  .header-file { font-size: 12px; color: var(--text-muted); margin-left: auto; }
+
+  /* Plan summary */
+  .plan-summary {
+    padding: 14px 16px;
+    background: var(--bg-plan);
+    border-bottom: 0.5px solid var(--border);
+    flex-shrink: 0;
+  }
+  .plan-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--bg-plan-text);
+    margin-bottom: 4px;
+  }
+  .plan-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--bg-plan-text);
+    margin-bottom: 4px;
+  }
+  .plan-detail {
+    font-size: 12px;
+    color: var(--bg-plan-text-muted);
+    line-height: 1.5;
+  }
+
+  /* Empty state */
+  .empty-state {
+    flex: 1;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding: 0;
+    color: var(--text-muted);
+    font-size: 13px;
+    overflow-y: auto;
+    min-height: 0;
+  }
+  .empty-state-inner { max-width: 280px; line-height: 1.6; }
+
+  /* Setup panel */
+  #setup-panel { width: 100%; }
+  .setup-body { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .setup-section {
+    background: var(--bg-hover);
+    border-radius: var(--radius);
+    padding: 14px;
+  }
+  .setup-section-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .setup-section-label.tight { margin-bottom: 2px; }
+  .status-row-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+  }
+  .status-row-icon { width: 16px; text-align: center; flex-shrink: 0; }
+  .status-row-label { color: var(--text-primary); font-weight: 500; min-width: 100px; }
+  .status-row-detail { color: var(--text-muted); }
+  .setup-section-gap { display: flex; flex-direction: column; gap: 8px; }
+  .prompt-chip {
+    background: rgba(0,0,0,0.04);
+    border-radius: 5px;
+    padding: 6px 10px;
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+    cursor: default;
+  }
+  .cmd-block-wrap { position: relative; }
+  .cmd-block {
+    display: block;
+    background: rgba(0,0,0,0.06);
+    border-radius: 6px;
+    padding: 10px 44px 10px 10px;
+    font-size: 11px;
+    word-break: break-all;
+    color: var(--text-primary);
+    font-family: "SF Mono", Menlo, monospace;
+  }
+  .cmd-copy-btn {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--bg);
+    border: 0.5px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    padding: 3px 8px;
+    font-size: 10px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-family: inherit;
+  }
+  .cmd-copy-btn:hover { background: var(--row-hover); }
+  .setup-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+  }
+  .setup-details {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .setup-details summary {
+    cursor: pointer;
+    user-select: none;
+    padding: 4px 0;
+  }
+  .setup-details ol {
+    padding-left: 18px;
+    margin: 8px 0 0;
+    line-height: 1.8;
+  }
+  .inline-code {
+    background: rgba(0,0,0,0.06);
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-family: "SF Mono", Menlo, monospace;
+  }
+
+  /* Bulk toolbar */
+  .bulk-toolbar {
+    padding: 10px 16px 6px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 0.5px solid var(--border);
+    flex-shrink: 0;
+  }
+  .bulk-count { font-size: 12px; color: var(--text-muted); }
+  .bulk-count strong { color: var(--text); font-weight: 500; }
+  .bulk-buttons { display: flex; gap: 6px; }
+  .btn-small {
+    font-size: 11px;
+    padding: 4px 8px;
+    background: transparent;
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .btn-small:hover { background: var(--row-hover); }
+
+  /* Row list */
+  .rows {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+  }
+  .row {
+    padding: 10px 16px;
+    border-top: 0.5px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .row:first-child { border-top: none; }
+  .row:hover { background: var(--row-hover); }
+  .row.selected { background: var(--row-selected); }
+  .row-checkbox {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    border: 1px solid var(--border-strong);
+    flex-shrink: 0;
+    margin-top: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+  }
+  .row.checked .row-checkbox {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .row.checked .row-checkbox::after {
+    content: "";
+    width: 4px;
+    height: 7px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg) translate(-1px, -1px);
+  }
+  .row-body { flex: 1; min-width: 0; }
+  .row-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 3px;
+    flex-wrap: wrap;
+  }
+  .row-type-tag {
+    font-family: "SF Mono", Menlo, monospace;
+    font-size: 10px;
+    background: var(--bg-subtle);
+    color: var(--text);
+    padding: 1px 5px;
+    border-radius: 3px;
+    text-transform: uppercase;
+  }
+  .row-breadcrumb {
+    font-size: 11px;
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .risk-tag {
+    font-size: 10px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+  .risk-tag.risky { background: var(--warning-bg); color: var(--warning-text); }
+  .risk-tag.destructive { background: #fcebeb; color: #791f1f; }
+  .row-diff {
+    font-family: "SF Mono", Menlo, monospace;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    line-height: 1.4;
+  }
+  .row-from {
+    color: var(--danger);
+    text-decoration: line-through;
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .row-to {
+    color: var(--success);
+    font-weight: 500;
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .row-arrow { color: var(--text-tertiary); flex-shrink: 0; }
+  .row-note {
+    font-size: 11px;
+    color: var(--warning-text);
+    margin-top: 4px;
+  }
+  .row-warning {
+    font-size: 11px;
+    color: var(--danger);
+    margin-top: 4px;
+  }
+  .row-zoom {
+    font-size: 10px;
+    padding: 3px 7px;
+    background: transparent;
+    border: 0.5px solid var(--border);
+    border-radius: 3px;
+    color: var(--text-muted);
+    cursor: pointer;
+    flex-shrink: 0;
+    font-family: inherit;
+  }
+  .row-zoom:hover { background: var(--bg); }
+  .row-status {
+    font-size: 10px;
+    margin-left: 6px;
+    flex-shrink: 0;
+  }
+  .row-status.ok { color: var(--success); }
+  .row-status.failed { color: var(--danger); }
+
+  /* Footer */
+  .footer {
+    padding: 12px 16px;
+    border-top: 0.5px solid var(--border);
+    background: var(--bg-subtle);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-primary {
+    flex: 1;
+    font-size: 13px;
+    padding: 8px 12px;
+    background: var(--accent);
+    color: var(--accent-text);
+    border: none;
+    border-radius: var(--radius);
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .btn-secondary {
+    font-size: 13px;
+    padding: 8px 12px;
+    background: transparent;
+    border: 0.5px solid var(--border-strong);
+    border-radius: var(--radius);
+    color: var(--text);
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .btn-secondary:hover:not(:disabled) { background: var(--row-hover); }
+  .btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* History strip */
+  .history {
+    padding: 10px 16px;
+    border-top: 0.5px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-title">
+      <span>Design Audit Bridge</span>
+      <div id="status-badge" class="status-badge">
+        <div class="status-dot"></div>
+        <span id="status-text">Disconnected</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="plan-summary" class="plan-summary" style="display: none;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+      <div class="plan-label" id="plan-label" style="margin-bottom:0;">Pending review</div>
+      <span id="last-action-count" style="background: var(--bg-plan); color: var(--bg-plan-text); padding: 1px 8px; border-radius: 10px; font-size:10px; font-weight:600;"></span>
+    </div>
+    <div class="plan-title" id="plan-title"></div>
+    <div class="plan-detail" id="plan-detail"></div>
+  </div>
+
+  <div id="empty-state" class="empty-state">
+    <div id="setup-panel" style="width:100%;"></div>
+  </div>
+
+  <div id="bulk-toolbar" class="bulk-toolbar" style="display: none;">
+    <div class="bulk-count">
+      Review · <strong id="selected-count">0</strong> approved of <span id="total-count">0</span>
+    </div>
+    <div class="bulk-buttons">
+      <button class="btn-small" id="btn-all">All</button>
+      <button class="btn-small" id="btn-none">None</button>
+    </div>
+  </div>
+
+  <div id="rows" class="rows" style="display: none;"></div>
+
+  <div id="footer" class="footer" style="display: none;">
+    <button class="btn-primary" id="btn-apply">Approve &amp; Apply</button>
+    <button class="btn-secondary" id="btn-reject">Reject All</button>
+  </div>
+
+  <div class="history">
+    <div id="history-text">Audit log: no changes yet</div>
+    <button class="btn-secondary" id="btn-undo" disabled>↩ Undo last</button>
+  </div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  // ---------------------------------------------------------------------------
+  // UI state
+  // ---------------------------------------------------------------------------
+  const state = {
+    plan: null,
+    selected: new Set(),
+    opResults: new Map(),
+    warnings: new Map(),
+    history: [],
+  };
+
+  // ---------------------------------------------------------------------------
+  // Send message to sandbox (code.js)
+  // ---------------------------------------------------------------------------
+  function sendToSandbox(msg) {
+    parent.postMessage({ pluginMessage: msg }, "*");
+  }
+
+  // ---------------------------------------------------------------------------
+  // WebSocket to bridge server (MUST live in the UI iframe, not the sandbox)
+  // ---------------------------------------------------------------------------
+  var ws = null;
+  var wsReconnectTimer = null;
+  var wsRetryDelay = 3000; // exponential backoff: 3s → 6s → 12s → max 30s
+
+  function connectWs() {
+    if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) return;
+
+    try {
+      ws = new WebSocket("ws://localhost:7879/plugin");
+
+      ws.onopen = function() {
+        console.log("[Bridge] WebSocket connected");
+        wsRetryDelay = 3000; // reset backoff on success
+        setConnected(true);
+      };
+
+      ws.onmessage = function(ev) {
+        try {
+          var msg = JSON.parse(ev.data);
+          if (msg.kind === "plan") {
+            window.parent.postMessage({ pluginMessage: { type: "ui.plan-from-bridge", plan: msg.plan } }, "*");
+            receivePlan(msg.plan);
+          } else if (msg.kind === "rpc_request") {
+            window.parent.postMessage({ pluginMessage: { type: "ui.rpc-request", rpcId: msg.rpcId, method: msg.method, params: msg.params } }, "*");
+          }
+        } catch(e) {
+          console.error("[Bridge] Bad message:", e);
+        }
+      };
+
+      ws.onclose = function() {
+        ws = null;
+        setConnected(false);
+        wsReconnectTimer = setTimeout(connectWs, wsRetryDelay);
+        wsRetryDelay = Math.min(wsRetryDelay * 2, 30000); // cap at 30s
+      };
+
+      ws.onerror = function() {
+        // onclose will handle reconnect
+      };
+    } catch(e) {
+      console.error("[Bridge] Failed to create WebSocket:", e);
+      setConnected(false);
+      wsReconnectTimer = setTimeout(connectWs, wsRetryDelay);
+      wsRetryDelay = Math.min(wsRetryDelay * 2, 30000);
+    }
+  }
+
+  function sendEventToServer(event) {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      try {
+        ws.send(JSON.stringify({ kind: "event", event: event }));
+      } catch(e) {}
+    }
+  }
+
+  function setConnected(connected) {
+    $("status-badge").className = "status-badge" + (connected ? " connected" : "");
+    $("status-text").innerText = connected ? "Connected" : "Disconnected";
+    sendToSandbox({ type: "ui.connection-status", connected: connected });
+    renderSetupPanel(connected);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Setup panel — shown in empty-state, switches between ready/disconnected view
+  // ---------------------------------------------------------------------------
+  var setupCopyTimer = null;
+
+  function renderSetupPanel(connected) {
+    var panel = $("setup-panel");
+    if (!panel) return;
+
+    if (connected) {
+      panel.innerHTML =
+        '<div class="setup-body">' +
+          '<div class="setup-section setup-section-gap">' +
+            '<div class="setup-section-label tight">System Status</div>' +
+            statusRow('✅', 'Figma Plugin',  'Open') +
+            statusRow('✅', 'Bridge Server', 'localhost:7879') +
+            statusRow('✅', 'MCP Server',    'figma-control-bridge') +
+          '</div>' +
+          '<div class="setup-section">' +
+            '<div class="setup-section-label">Audit prompts — try in Claude</div>' +
+            promptChip('Audit this page for hardcoded colors — I\u2019ll review each fix before applying') +
+            promptChip('Find all instances with override drift and show me what changed') +
+            promptChip('Which fills on the selected frame should use a semantic token instead?') +
+            promptChip('Export all color tokens as CSS variables to tokens.css') +
+            promptChip('Rename selected layers to match DS naming — show me the diff first') +
+            promptChip('Snapshot all components now so I can diff against them later') +
+            promptChip('Diff this week\u2019s component snapshot vs last week — flag breaking changes') +
+            promptChip('Search Button variants and list their properties') +
+            promptChip('Bind the fill of the selected layer to the nearest semantic token') +
+          '</div>' +
+        '</div>';
+    } else {
+      panel.innerHTML =
+        '<div class="setup-body">' +
+          '<div class="setup-section">' +
+            '<div class="setup-section-label">One-click Setup</div>' +
+            '<div class="setup-desc">Run once in Terminal to install, build, and start everything:</div>' +
+            '<div class="cmd-block-wrap">' +
+              '<code id="setup-cmd" class="cmd-block">cd ~/Downloads/claude-control-bridge &amp;&amp; ./setup.sh</code>' +
+              '<button id="btn-copy-setup" class="cmd-copy-btn">Copy</button>' +
+            '</div>' +
+          '</div>' +
+          '<div class="setup-section setup-section-gap">' +
+            '<div class="setup-section-label tight">System Status</div>' +
+            statusRow('✅', 'Figma Plugin',  'Open') +
+            statusRow('⏳', 'Bridge Server', 'Disconnected — retrying\u2026') +
+            statusRow('—',  'MCP Server',    'Waiting for bridge') +
+          '</div>' +
+          '<details class="setup-details">' +
+            '<summary>Manual steps</summary>' +
+            '<ol>' +
+              '<li>In Terminal: <code class="inline-code">node bridge-server.js</code></li>' +
+              '<li>Register MCP: <code class="inline-code">claude mcp add figma-control-bridge -- node mcp-server.js</code></li>' +
+              '<li>Plugin connects automatically every 3 s</li>' +
+            '</ol>' +
+          '</details>' +
+        '</div>';
+      // Attach copy button listener after innerHTML is set
+      var copyBtn = document.getElementById('btn-copy-setup');
+      if (copyBtn) copyBtn.addEventListener('click', copySetupCmd);
+    }
+  }
+
+  function statusRow(icon, label, detail) {
+    return '<div class="status-row-item">' +
+      '<span class="status-row-icon">' + icon + '</span>' +
+      '<span class="status-row-label">' + label + '</span>' +
+      '<span class="status-row-detail">' + detail + '</span>' +
+      '</div>';
+  }
+
+  function promptChip(text) {
+    return '<div class="prompt-chip">"' + text + '"</div>';
+  }
+
+  function copySetupCmd() {
+    var cmd = $("setup-cmd");
+    if (!cmd) return;
+    var btn = $("btn-copy-setup");
+    try {
+      navigator.clipboard.writeText(cmd.textContent.trim()).then(function() {
+        if (btn) { btn.textContent = 'Copied!'; btn.style.color = 'var(--success)'; }
+        clearTimeout(setupCopyTimer);
+        setupCopyTimer = setTimeout(function() {
+          if (btn) { btn.textContent = 'Copy'; btn.style.color = ''; }
+        }, 2000);
+      });
+    } catch(e) {
+      // Fallback for older Figma plugin environments
+      var ta = document.createElement('textarea');
+      ta.value = cmd.textContent.trim();
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      if (btn) { btn.textContent = 'Copied!'; btn.style.color = 'var(--success)'; }
+      clearTimeout(setupCopyTimer);
+      setupCopyTimer = setTimeout(function() {
+        if (btn) { btn.textContent = 'Copy'; btn.style.color = ''; }
+      }, 2000);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Render
+  // ---------------------------------------------------------------------------
+  function updateLastActionBar(plan, addedCount) {
+    $("plan-title").textContent = plan.title;
+    var countEl = $("last-action-count");
+    if (addedCount > 0) {
+      countEl.textContent = "+" + addedCount + " op" + (addedCount === 1 ? "" : "s");
+      countEl.style.display = "";
+    } else {
+      countEl.style.display = "none";
+    }
+  }
+
+  function receivePlan(plan) {
+    if (state.plan) {
+      // Append operations to existing plan instead of replacing
+      var existingIds = new Set(state.plan.operations.map(function(op) { return op.id; }));
+      var added = 0;
+      plan.operations.forEach(function(op) {
+        if (!existingIds.has(op.id)) {
+          state.plan.operations.push(op);
+          if (op.risk === "safe") state.selected.add(op.id);
+          added++;
+        }
+      });
+      updateLastActionBar(plan, added);
+    } else {
+      state.plan = plan;
+      state.selected.clear();
+      state.opResults.clear();
+      state.warnings.clear();
+      plan.operations.forEach(function(op) {
+        if (op.risk === "safe") state.selected.add(op.id);
+      });
+      updateLastActionBar(plan, plan.operations.length);
+    }
+    render();
+  }
+
+  function render() {
+    if (!state.plan) {
+      $("plan-summary").style.display = "none";
+      $("bulk-toolbar").style.display = "none";
+      $("rows").style.display = "none";
+      $("footer").style.display = "none";
+      $("empty-state").style.display = "flex";
+      return;
+    }
+
+    $("empty-state").style.display = "none";
+    $("plan-summary").style.display = "block";
+    $("bulk-toolbar").style.display = "flex";
+    $("rows").style.display = "block";
+    $("footer").style.display = "flex";
+
+    var p = state.plan;
+    $("plan-label").textContent = "Claude instruction";
+    $("plan-title").textContent = p.title;
+    $("plan-detail").textContent = p.summary || "";
+    $("total-count").textContent = String(p.operations.length);
+    $("selected-count").textContent = String(state.selected.size);
+
+    var rows = $("rows");
+    rows.innerHTML = "";
+    p.operations.forEach(function(op) {
+      var row = document.createElement("div");
+      row.className = "row" + (state.selected.has(op.id) ? " checked" : "");
+      row.dataset.opId = op.id;
+
+      var checkbox = document.createElement("div");
+      checkbox.className = "row-checkbox";
+
+      var body = document.createElement("div");
+      body.className = "row-body";
+
+      var meta = document.createElement("div");
+      meta.className = "row-meta";
+      var tag = document.createElement("span");
+      tag.className = "row-type-tag";
+      tag.textContent = (op.target.type || op.target.kind || "node").toLowerCase();
+      meta.appendChild(tag);
+      var bc = document.createElement("span");
+      bc.className = "row-breadcrumb";
+      bc.textContent = (op.context && op.context.breadcrumb) || (op.context && op.context.page) || "";
+      meta.appendChild(bc);
+      if (op.risk && op.risk !== "safe") {
+        var risk = document.createElement("span");
+        risk.className = "risk-tag " + op.risk;
+        risk.textContent = op.risk;
+        meta.appendChild(risk);
+      }
+      var result = state.opResults.get(op.id);
+      if (result) {
+        var status = document.createElement("span");
+        status.className = "row-status " + result;
+        status.textContent = result === "ok" ? "✓ applied" : "✗ failed";
+        meta.appendChild(status);
+      }
+      body.appendChild(meta);
+
+      var diff = document.createElement("div");
+      diff.className = "row-diff";
+      var from = document.createElement("span");
+      from.className = "row-from";
+      from.textContent = JSON.stringify(op.from || "");
+      var arrow = document.createElement("span");
+      arrow.className = "row-arrow";
+      arrow.textContent = "→";
+      var to = document.createElement("span");
+      to.className = "row-to";
+      to.textContent = op.to;
+      diff.appendChild(from);
+      diff.appendChild(arrow);
+      diff.appendChild(to);
+      body.appendChild(diff);
+
+      if (op.risk === "risky" && op.cascades && op.cascades.length) {
+        var note = document.createElement("div");
+        note.className = "row-note";
+        var counts = op.cascades.map(function(c) { return (c.count || 1) + " " + c.kind; }).join(", ");
+        note.textContent = "Cascades: " + counts;
+        body.appendChild(note);
+      }
+
+      var w = state.warnings.get(op.id);
+      if (w) {
+        var warn = document.createElement("div");
+        warn.className = "row-warning";
+        warn.textContent = w;
+        body.appendChild(warn);
+      }
+
+      var zoom = document.createElement("button");
+      zoom.className = "row-zoom";
+      zoom.textContent = "Zoom";
+      zoom.onclick = function(e) {
+        e.stopPropagation();
+        sendToSandbox({ type: "ui.zoom-to", nodeId: op.target.id });
+      };
+
+      row.appendChild(checkbox);
+      row.appendChild(body);
+      row.appendChild(zoom);
+      row.onclick = function() { toggleRow(op.id); };
+      rows.appendChild(row);
+    });
+
+    $("btn-apply").textContent = "Approve & Apply " + state.selected.size + " change" + (state.selected.size === 1 ? "" : "s");
+    $("btn-apply").disabled = state.selected.size === 0;
+  }
+
+  function toggleRow(opId) {
+    if (state.selected.has(opId)) state.selected.delete(opId);
+    else state.selected.add(opId);
+    render();
+  }
+
+  function renderHistory() {
+    var h = state.history;
+    if (!h.length) {
+      $("history-text").textContent = "Audit log: no changes yet";
+      $("btn-undo").disabled = true;
+    } else {
+      var total = h.reduce(function(acc, e) { return acc + e.opCount; }, 0);
+      $("history-text").textContent = "Audit log: " + h.length + " session" + (h.length === 1 ? "" : "s") + " · " + total + " applied";
+      $("btn-undo").disabled = false;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Button wiring
+  // ---------------------------------------------------------------------------
+  $("btn-all").onclick = function() {
+    if (!state.plan) return;
+    state.plan.operations.forEach(function(op) {
+      if (op.risk === "safe") state.selected.add(op.id);
+    });
+    render();
+  };
+  $("btn-none").onclick = function() {
+    state.selected.clear();
+    render();
+  };
+  $("btn-apply").onclick = function() {
+    if (!state.plan) return;
+    sendToSandbox({
+      type: "ui.apply",
+      planId: state.plan.planId,
+      selectedOpIds: Array.from(state.selected),
+    });
+  };
+  $("btn-reject").onclick = function() {
+    if (!state.plan) return;
+    sendToSandbox({ type: "ui.reject", planId: state.plan.planId });
+    sendEventToServer({ type: "plan.rejected", planId: state.plan.planId });
+    state.plan = null;
+    state.selected.clear();
+    state.opResults.clear();
+    state.warnings.clear();
+    render();
+  };
+  $("btn-undo").onclick = function() { sendToSandbox({ type: "ui.undo-last" }); };
+
+  // ---------------------------------------------------------------------------
+  // Messages from sandbox
+  // ---------------------------------------------------------------------------
+  window.addEventListener("message", function(ev) {
+    var msg = ev.data.pluginMessage;
+    if (!msg) return;
+
+    if (msg.type === "sandbox.plan") {
+      receivePlan(msg.plan);
+    }
+
+    if (msg.type === "sandbox.history") {
+      state.history = msg.entries;
+      renderHistory();
+    }
+
+    if (msg.type === "sandbox.dry-run-result") {
+      state.warnings.clear();
+      msg.warnings.forEach(function(w) {
+        state.warnings.set(w.opId, "[" + w.level + "] " + w.message);
+      });
+      render();
+    }
+
+    if (msg.type === "sandbox.event") {
+      var event = msg.event;
+      // Forward events to bridge server
+      sendEventToServer(event);
+
+      if (event.type === "op.complete") {
+        if (state.plan) {
+          state.plan.operations = state.plan.operations.filter(function(op) { return op.id !== event.opId; });
+          state.selected.delete(event.opId);
+        }
+        render();
+      }
+      if (event.type === "op.failed") {
+        state.opResults.set(event.opId, "failed");
+        state.warnings.set(event.opId, event.error);
+        render();
+      }
+      if (event.type === "plan.complete") {
+        setTimeout(function() { sendToSandbox({ type: "ui.request-history" }); }, 100);
+      }
+    }
+    
+    if (msg.type === "sandbox.rpc-response") {
+      if (ws && ws.readyState === 1) { // 1 === WebSocket.OPEN
+        ws.send(JSON.stringify({ kind: "rpc_response", rpcId: msg.rpcId, result: msg.result, error: msg.error }));
+      }
+    }
+  });
+
+  // ---------------------------------------------------------------------------
+  // Boot: render initial disconnected state, then connect WS
+  // ---------------------------------------------------------------------------
+  renderSetupPanel(false);   // show disconnected UI immediately on open
+  connectWs();
+  sendToSandbox({ type: "ui.ready" });
+  renderHistory();
+</script>
+</body>
+</html>
