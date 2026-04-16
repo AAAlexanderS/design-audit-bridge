@@ -8,33 +8,6 @@ When you ask Claude to make changes to your Figma file, every proposed edit appe
 
 ---
 
-## What it looks like
-
-```
-┌─ Design Audit Bridge ──────────────────── ● Connected ─┐
-│  Pending review                          +5 ops         │
-│  Rename all icon layers to DS naming                    │
-│  ─────────────────────────────────────────────────────  │
-│  Review · 4 approved of 5                               │
-│  ┌──────────────────────────────────────────────────┐  │
-│  │ ✓ FRAME  Foundations › Icons                     │  │
-│  │   "icon_arrow" → "ic/arrow/right-16"       Zoom  │  │
-│  ├──────────────────────────────────────────────────┤  │
-│  │ ✓ FRAME  Foundations › Icons                     │  │
-│  │   "icon_close" → "ic/close-16"             Zoom  │  │
-│  ├──────────────────────────────────────────────────┤  │
-│  │   FRAME  Foundations › Icons         ⚠ risky    │  │
-│  │   "Button / Primary" → "btn-primary"       Zoom  │  │
-│  └──────────────────────────────────────────────────┘  │
-│  ┌──────────────────────┐  ┌─────────────┐             │
-│  │  Approve & Apply 4   │  │  Reject All │             │
-│  └──────────────────────┘  └─────────────┘             │
-│  Audit log: 2 sessions · 9 applied      [↩ Undo last]  │
-└────────────────────────────────────────────────────────┘
-```
-
----
-
 ## Why this exists
 
 Most AI-Figma integrations let Claude run arbitrary JavaScript directly against your file. That works — but gives you no preview, no per-change approval, and no plugin-managed undo.
